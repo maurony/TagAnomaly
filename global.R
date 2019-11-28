@@ -7,4 +7,5 @@ if(!require(gridExtra)) install.packages('gridExtra', repos='http://cran.rstudio
 if(!require(shinydashboard)) install.packages('shinydashboard', repos='http://cran.rstudio.com/')
 if(!require(parsedate)) install.packages('parsedate', repos='http://cran.rstudio.com/')
 if(!require(devtools)) install.packages('devtools', repos='http://cran.rstudio.com/')
+if(!require(devtools)) install.packages('plotly', repos='http://cran.rstudio.com/')
 if(!require(AnomalyDetection)) devtools::install_github('twitter/AnomalyDetection')

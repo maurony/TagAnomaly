@@ -49,17 +49,21 @@ server <- function(input,output, session) {
   getDataset <- reactive({
     ## Get time-series dataset from file upload
     
-    if(is.null(input$timeseriesfile)) return(NULL)
+    if(is.null(input$timeseriesfile)) 
+      return(NULL)
+    
+    # read dataset
     dataset <- tryReadFile()
     
-    
+    # validate datast
     validate(
       need(nrow(dataset) > 0, "Input file is empty"),
-      need(('date' %in% names(dataset)),"date column not found. Consider renaming your timestamp column to date"),
-      need(('value' %in% names(dataset)),"value column not found. Consider renaming your value column to value")
+      need(('date' %in% names(dataset)),"date column not found. Timestamp column has to be named date"),
+      need(('category' %in% names(dataset)),"category column not found. Contegory column has to be named category"),
+      need(('value' %in% names(dataset)),"value column not found. Value column has to be named value")
       
     )
-    dataset
+    dplyr::as_tibble(dataset)
   })  
 
   tryReadFile <- function() {
@@ -113,7 +117,7 @@ server <- function(input,output, session) {
     else{
       
       ## Parse date to POSIXct
-      dataset$new_date <- as.POSIXct(dataset$date,tz = 'UTC',format = '%Y-%m-%d %H:%M:%S')
+      dataset$new_date <- as.POSIXct(dataset$date, tz = 'CET', format = '%Y-%m-%d %H:%M:%OS')
       
       ## If parsing failed, use parsedate to automatically parse the input date
       if(all(is.na(dataset$new_date))){
@@ -157,17 +161,18 @@ server <- function(input,output, session) {
     if(hasCategories()==FALSE){
       return(ts)
     }
+    
     cate <- input$category
     if(is.null(cate)) return(NULL)
     
-    dataset <- ts %>% filter(category == cate)
+    dataset <- ts %>% 
+      filter(category == cate)
     
     ## Fill missing values in time series if requested (Fill with 0 dates in which no value exists)
-    if(input$interpolate){
-      dataset <- padMissingDates(dataset,timeSeriesGapValue = timeSeriesGap())
-    }
-    
-    dataset
+    #if(input$interpolate){
+    #  dataset <- padMissingDates(dataset,timeSeriesGapValue = timeSeriesGap())
+    #}
+        dataset
   })
   
 
@@ -184,78 +189,84 @@ server <- function(input,output, session) {
   getTimeFilteredCategoryDataset <- reactive({
     ## Get category dataset, filtered by the slider range
     dataset <- getCategoryDataset()
-    if(is.null(dataset)) return(NULL)
-    if(is.null(input$slider)) return(NULL)
+    if(is.null(dataset)) 
+      return(NULL)
+    if(is.null(input$slider))
+      return(NULL)
     
     
     session$resetBrush("input$user_brush")
     selectedPoints(data.frame())
-    dataset %>% filter(date >= input$slider[1], date <= input$slider[2])
+    dataset %>% 
+      filter(
+        date >= input$slider[1], 
+        date <= input$slider[2]
+      )
   })
   
   ####---- Raw data handling ----####
   
 
-  getRawData <- reactive({
-    ## Get raw data (an additional dataset for which the time-series dataset is an aggregation)
-    ## See R/create_sample_data.R for a script that creates demo time-series and raw datasets
-    
-    cate <- input$category
-    
-    if(is.null(input$rawfile)) return(NULL)
-    raw <- withProgress({
-      read.csv(input$rawfile$datapath,stringsAsFactors = F)
-    },message = "loading raw data file")
-    if(!numericTimestamp()){
-      raw$new_date <- as.POSIXct(strptime(raw$date,format = "%Y-%m-%d %H:%M:%S",tz = 'UTC'))
-      
-      ## If parsing failed, use parsedate to automatically parse the input date
-      if(all(is.na(raw$new_date))){
-        warning('Error parsing date column, using parsedate to try parsing the date')
-        library(parsedate)
-        raw$date <- parse_date(raw$date)
-      } else{
-        raw$date <- raw$new_date
-        raw$new_date <- NULL
-      }
-    }
-    if(hasCategories()){
-      raw <- raw %>% filter(category == cate)
-    }
-    
-    raw
-  })
-  
-
-  getRawDataForSample <- reactive({
-    ## get raw data for a sample selected by the user
-    lastclicked <- input$summaryTable_rows_selected
-    if(is.null(lastclicked)) return(NULL)
-    
-    raw <- getRawData()
-    if(is.null(raw)) stop('No raw data found for further inspection')
-    selected <- selectedPoints()
-    
-    categoryDataset <- getTimeFilteredCategoryDataset()
-    
-    selectedRow <- which(categoryDataset$date == selected[lastclicked,'date'])
-    if(selectedRow > nrow(categoryDataset)){
-      nextSampleDate <- selected$date + timeSeriesGap()
-    } else{
-      nextSampleDate <- categoryDataset[selectedRow+1,'date']
-    }
-    if(is.null(selected)) return(NULL)
-    
-    sampleDate <- selected[lastclicked,'date']
-    
-    #get raw data only for this window
-    raw <- raw %>% filter(date >= sampleDate & date < nextSampleDate, category == input$category)
-    
-    ## Select columns to show
-    raw <- raw %>% select(date,category,content)
-    raw
-    
-  })
+  #getRawData <- reactive({
+  #  ## Get raw data (an additional dataset for which the time-series dataset is an aggregation)
+  #  ## See R/create_sample_data.R for a script that creates demo time-series and raw datasets
+  #  
+  #  cate <- input$category
+  #  
+  #  if(is.null(input$rawfile)) return(NULL)
+  #  raw <- withProgress({
+  #    read.csv(input$rawfile$datapath,stringsAsFactors = F)
+  #  },message = "loading raw data file")
+  #  if(!numericTimestamp()){
+  #    raw$new_date <- as.POSIXct(strptime(raw$date,format = "%Y-%m-%d %H:%M:%S",tz = 'UTC'))
+  #    
+  #    ## If parsing failed, use parsedate to automatically parse the input date
+  #    if(all(is.na(raw$new_date))){
+  #      warning('Error parsing date column, using parsedate to try parsing the date')
+  #      library(parsedate)
+  #      raw$date <- parse_date(raw$date)
+  #    } else{
+  #      raw$date <- raw$new_date
+  #      raw$new_date <- NULL
+  #    }
+  #  }
+  #  if(hasCategories()){
+  #    raw <- raw %>% filter(category == cate)
+  #  }
+  #  
+  #  raw
+  #})
+  #
+#
+  #getRawDataForSample <- reactive({
+  #  ## get raw data for a sample selected by the user
+  #  lastclicked <- input$summaryTable_rows_selected
+  #  if(is.null(lastclicked)) return(NULL)
+  #  
+  #  raw <- getRawData()
+  #  if(is.null(raw)) stop('No raw data found for further inspection')
+  #  selected <- selectedPoints()
+  #  
+  #  categoryDataset <- getTimeFilteredCategoryDataset()
+  #  
+  #  selectedRow <- which(categoryDataset$date == selected[lastclicked,'date'])
+  #  if(selectedRow > nrow(categoryDataset)){
+  #    nextSampleDate <- selected$date + timeSeriesGap()
+  #  } else{
+  #    nextSampleDate <- categoryDataset[selectedRow+1,'date']
+  #  }
+  #  if(is.null(selected)) return(NULL)
+  #  
+  #  sampleDate <- selected[lastclicked,'date']
+  #  
+  #  #get raw data only for this window
+  #  raw <- raw %>% filter(date >= sampleDate & date < nextSampleDate, category == input$category)
+  #  
+  #  ## Select columns to show
+  #  raw <- raw %>% select(date,category,content)
+  #  raw
+  #  
+  #})
   
   
   ####---- Infer time-series frequency ----####
@@ -269,11 +280,13 @@ server <- function(input,output, session) {
     diff <- as.numeric(maxi) - as.numeric(mini)
     
     sel <- '1 day'
-    if(diff < 60){
+    if (diff < 1) {
+      sel <- '1 ms' 
+    } else if(diff < 60){
       # difference is in seconds
-      sel <- '1 second'
+      sel <- '1 sec'
     } else if(diff < 60*60){
-      sel <- '1 minute'
+      sel <- '1 min'
     } else if(diff < 60*60*24){
       sel <- '1 hour'
     } else if(diff < 60*60*24*7){
@@ -302,8 +315,8 @@ server <- function(input,output, session) {
       mini = min(dataset$date)
       maxi = max(dataset$date)
     } else{
-      mini = as.POSIXct(min(dataset$date),origin = '1970-01-01',tz = 'UTC')
-      maxi = as.POSIXct(max(dataset$date),origin = '1970-01-01',tz = 'UTC')
+      mini = as.POSIXct(min(dataset$date),origin = '1970-01-01',tz = 'CET')
+      maxi = as.POSIXct(max(dataset$date),origin = '1970-01-01',tz = 'CET')
     }
     sliderInput("slider","Time range",min = mini-1,max = maxi+1,value = c(mini-1,maxi+1),step = 1,width = 400)
   })
@@ -328,24 +341,57 @@ server <- function(input,output, session) {
   output$plot <- renderPlot({
     withProgress({
       categoryDataset <- getTimeFilteredCategoryDataset()
-      if(is.null(categoryDataset)) return(NULL)
+      if(is.null(categoryDataset)) 
+        return(NULL)
       
-      g <- ggplot(categoryDataset, aes(date, value))+ geom_line(size=0.25,color="#D55E00") + geom_point(size = 0.5,shape=21,alpha=0.7)  + 
-        scale_y_continuous(labels = scales::comma) + theme_bw()
-      if(!numericTimestamp()){
-        g <- g +  scale_x_datetime(date_breaks = input$breaks)
-      }
-      g <- g + theme(axis.text.x = element_text(angle = 90, hjust = 1),
-                       panel.grid.minor = element_blank(), 
-                       text = element_text(size = 14))
       
-
+      pp_data <- categoryDataset %>% 
+        as_tibble() %>% 
+        mutate(
+          date = as.POSIXct(date, tz = 'CET', format = '%Y-%m-%d %H:%M:%OS'),
+          category = as.factor(category)
+        ) %>% 
+        mutate(
+          date_numeric = as.numeric(date),
+          date_string = format(date, format = '%Y-%m-%d %H:%M:%OS4')
+        )
       
-      if (dim(selectedPoints())[1] > 0) {
-        g <- g + geom_point(aes(date, value), data = selectedPoints(), color = "red")
-      } 
+      breaks <- seq.int(from = min(ceiling(pp_data$date_numeric)), to = max(floor(pp_data$date_numeric)), by = 10)
+      break_label <- as.POSIXct(breaks, origin="1970-01-01", tz = 'CET')
       
-      g
+      
+      p <-  ggplot(pp_data, aes(x=date_numeric, y = value)) +
+        geom_line() +
+        geom_point(
+          size = .5,
+          aes(text=sprintf("%s<br>Value: %s", date_string, value))
+        ) +
+        scale_x_continuous(
+          breaks = breaks,
+          labels = break_label,
+          limits = c(head(breaks, 1), tail(breaks, 1))
+        ) +
+        facet_wrap(~category, ncol = 1, scales = 'free', ) +
+        theme_bw()
+      
+      ggplotly(p, tooltip = c('text'))
+      
+      #g <- ggplot(categoryDataset, aes(date, value))+ geom_line(size=0.25,color="#D55E00") + geom_point(size = 0.5,shape=21,alpha=0.7)  + 
+      #  scale_y_continuous(labels = scales::comma) + theme_bw()
+      #if(!numericTimestamp()){
+      #  g <- g +  scale_x_datetime(date_breaks = input$breaks)
+      #}
+      #g <- g + theme(axis.text.x = element_text(angle = 90, hjust = 1),
+      #                 panel.grid.minor = element_blank(), 
+      #                 text = element_text(size = 14))
+      #
+#
+      #
+      #if (dim(selectedPoints())[1] > 0) {
+      #  g <- g + geom_point(aes(date, value), data = selectedPoints(), color = "red")
+      #} 
+      #
+      #g
     },message = "Rendering plot...")
   })
 

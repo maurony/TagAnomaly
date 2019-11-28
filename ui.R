@@ -42,15 +42,15 @@ sidebar <- dashboardSidebar(
                 ".csv")
     ),
     #checkboxInput("header","My dataset has headers",value=TRUE),
-    fileInput("rawfile", "Choose CSV File with raw data",
-              accept = c(
-                "text/csv",
-                "text/comma-separated-values,text/plain",
-                ".csv")
-    ),
+    #fileInput("rawfile", "Choose CSV File with raw data",
+    #          accept = c(
+    #            "text/csv",
+    #            "text/comma-separated-values,text/plain",
+    #            ".csv")
+    #),
     uiOutput("category"),
-    checkboxInput('interpolate',label = "Interpolate missing points",value = FALSE),
-    selectInput('breaks',"Select graph breaks",choices = c('1 sec','1 min','1 hour','1 day','1 week','1 month','1 year'),selected = '1 year'),
+    #checkboxInput('interpolate',label = "Interpolate missing points",value = FALSE),
+    selectInput('breaks',"Select graph breaks",choices = c('1 ms', '1 sec', '1 min', '1 hour', '1 day', '1 week', '1 month', '1 year'),selected = '1 year'),
     uiOutput('slider')
   )
 )
@@ -75,25 +75,26 @@ body <- dashboardBody(
              h2('Inspect all other categories:'),
              numericInput('minPerCategory','Minimum samples for being a major category',min = 0,value = 100),
              plotOutput("allplot")
-    ),
-    tabPanel('Category distribution over time',
-             h2('Inspect change in distribution over time:'),
-             numericInput('minPerCategoryDist','Minimum samples for being a major category',min = 0,value = 100),
-             plotOutput('alldistributions')
-    ),
-    tabPanel('Suggested anomalies (Twitter model)',
-             h3("Based on Twitter's AnomalyDetection package:"),
-             a('https://github.com/twitter/AnomalyDetection/', href = 'https://github.com/twitter/AnomalyDetection/'),
-             h5("Might take a while to load..."),
-             plotOutput('twitteranomalies'),
-             fluidRow(
-               column(2, selectInput("twitterThreshold",label="Threshold",choices=c("None", "med_max", "p95", "p99"),selected = "p95")),
-               column(2, selectInput("twitterDirection",label="Direction",choices=c("pos", "neg", "both"),selected='pos')),
-               column(2, numericInput("twitterAlpha","Alpha value",min=0,max=1,step=0.05,value=0.05))
-               )
-             
-             
-    )
+    )#,
+    #tabPanel('Category distribution over time',
+    #         h2('Inspect change in distribution over time:'),
+    #         numericInput('minPerCategoryDist','Minimum samples for being a major category',min = 0,value = 100),
+    #         plotOutput('alldistributions')
+    #)
+    #,
+    #tabPanel('Suggested anomalies (Twitter model)',
+    #         h3("Based on Twitter's AnomalyDetection package:"),
+    #         a('https://github.com/twitter/AnomalyDetection/', href = 'https://github.com/twitter/AnomalyDetection/'),
+    #         h5("Might take a while to load..."),
+    #         plotOutput('twitteranomalies'),
+    #         fluidRow(
+    #           column(2, selectInput("twitterThreshold",label="Threshold",choices=c("None", "med_max", "p95", "p99"),selected = "p95")),
+    #           column(2, selectInput("twitterDirection",label="Direction",choices=c("pos", "neg", "both"),selected='pos')),
+    #           column(2, numericInput("twitterAlpha","Alpha value",min=0,max=1,step=0.05,value=0.05))
+    #           )
+    #         
+    #         
+    #)
   )
   
   
@@ -101,5 +102,5 @@ body <- dashboardBody(
 )
 
 
-dashboardPage(header, sidebar, body,skin = "red")
+dashboardPage(header, sidebar, body,skin = "blue")
 
